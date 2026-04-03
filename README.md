@@ -1,5 +1,7 @@
 # Tijori
 
+Note: this project includes vibe-coded elements produced with Codex and Claude.
+
 Standalone, local-first, secret management system designed for agentic workflows.
 NOTE: There is currently a /testingReset endpoint. This will go away soon. If you plan to deploy this, comment it out of app/main.py
 
