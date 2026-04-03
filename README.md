@@ -2,24 +2,9 @@
 
 Standalone local secret system.
 
-This is intentionally separate from PM and intended to run in its own container.
-
-## Runtime Location
-
-Current default access points:
-
-- from the host:
-  - `http://127.0.0.1:8211`
-- from workflow hooks / other containers:
-  - `http://host.docker.internal:8211`
-
-Port:
-
-- `8211`
-
 ## Goals
 
-- no Vault
+- This is not the same as HashiCorp Vault. It is simpler and has less ceremony, by design.
 - no secret values stored in PM
 - no unlock key stored by the system
 - local/tailnet trust boundary
@@ -77,7 +62,7 @@ Operational meaning:
 
 - if the vault is `locked`, any runtime secret-resolution path should fail immediately
 - if the vault is `unlocked`, anything that can reach the API can read secrets
-- unlock state is intentionally coarse-grained right now; project-level selection controls exposure, but API access still depends on network reachability plus vault state
+- unlock state is intentionally coarse-grained right now; policy is mostly network reachability plus vault state
 
 ## Sentinel
 
@@ -120,66 +105,44 @@ Useful operational calls:
   - returns fully resolved secret values
   - only works while unlocked
 
-## Secret Types In Use
+## How You Should Run tijori
 
-Current Scryer conventions:
+- run tijori in a container
+- initialize it by attaching to that container and running the CLI inside the container
+- mount a persistent volume into `/var/lib/scryer-secrets`
+- keep tijori on an internal Docker network
+- do not expose the tijori API to anything outside that Docker network
+- anything that accesses tijori should be on the same Docker network as tijori itself
 
-- `git_identity`
-  - used for named git / forge identities
-- `environment_variable`
-  - used for named environment-variable values
+This point matters:
 
-Current example shapes:
+- do not treat tijori as a public or host-exposed convenience API
+- network placement is currently a major part of the trust boundary
+- if something can reach tijori while it is unlocked, it can read secrets
 
-- `git_identity`
-  - `{"name":"forgejo","provider":"self-hosted","url":"http://...","username":"...","git_user_name":"...","git_user_email":"...","access_token":"..."}`
-- `environment_variable`
-  - `{"SAMPLE_ENV_VARIABLE":"sample environment variable value."}`
+## How To Use This System
 
-The `environment_variable` wrapper shape exists so the stored record remains self-describing by variable name.
+1. Start tijori in its container with persistent storage mounted.
+2. Attach to the running container.
+3. Run the CLI inside the container to initialize the store.
+4. Unlock the store only for a bounded TTL.
+5. Create, replace, and delete secrets using the API or CLI while supplying the passphrase.
+6. Lock the store again when active secret reads are no longer needed.
 
-## Workflow Integration
+Operational guidance:
 
-Workflows do not define secrets themselves.
-
-The model is:
-
-1. identities and variables are defined centrally in this service
-2. projects select which names are exposed to runtime
-3. orchestrator writes those selected names into `state.json`
-4. hook-side helper code resolves the selected names against this service at runtime
-
-Current runtime contract pieces:
-
-- `project_identities_associated`
-- `project_environment_variables_associated`
-- `secrets_service_url`
-
-Current helper behavior:
-
-- hooks should read `secrets_service_url` from `state.json`
-- hooks should check `GET /status` before attempting reads
-- if locked, hooks should fail immediately rather than silently continue
-- if unlocked, hooks can resolve the selected names via `GET /secrets`
+- keep unlock windows short
+- prefer explicit lock/unlock cycles over long-lived unlocked service state
+- treat container/network placement as part of the security model
+- back up the persistent encrypted storage, not decrypted material
 
 ## Current Limitations
 
 - unlock state is process-local memory
 - if the service restarts, it comes back locked
 - there is no finer-grained authorization layer yet beyond network access plus locked/unlocked state
-- hooks currently resolve from `GET /secrets`, which is simple but broad; a narrower lookup path may be desirable later
-- project exposure filtering happens in Scryer, not inside the secrets service itself
-
-## Container Notes
-
-Expected container behavior:
-
-- mount a persistent host volume into `/var/lib/scryer-secrets`
-- expose port `8211`
-- keep this service on the same trusted local/tailnet boundary as the rest of Scryer
 
 ## Notes
 
-- unlock state is process-local memory
-- if the service restarts, it comes back locked
 - PM metadata and identity binding can be layered on later
+- Scryer-specific usage notes live in [`Scryer Integration.md`](./Scryer%20Integration.md)
