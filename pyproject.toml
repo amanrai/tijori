@@ -1,7 +1,7 @@
 [project]
 name = "tijori"
 version = "0.1.0"
-description = "Standalone local secrets service."
+description = "Standalone, local-first, secret management system designed for agentic workflows."
 requires-python = ">=3.11"
 dependencies = [
   "argon2-cffi>=23.1.0",

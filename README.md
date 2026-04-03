@@ -1,13 +1,13 @@
-# tijori
+# Tijori
 
-Standalone local secret system.
+Standalone, local-first, secret management system designed for agentic workflows.
+NOTE: There is currently a /testingReset endpoint. This will go away soon. If you plan to deploy this, comment it out of app/main.py
 
 ## Goals
 
 - This is not the same as HashiCorp Vault. It is simpler and has less ceremony, by design.
-- no secret values stored in PM
 - no unlock key stored by the system
-- local/tailnet trust boundary
+- docker/local network/tailnet trust boundary. Nothing works without the passphrase - which is *never* stored, so really, *YOU* are the trust boundary.  
 - explicit `locked` / `unlocked` behavior
 - secret reads only while unlocked
 - secret create / replace / delete always require the passphrase
@@ -40,7 +40,7 @@ Within that root:
 - Passphrase is never stored
 - Only salt and KDF params are stored
 
-## Product Semantics
+## API Semantics
 
 - `locked`
   - secret reads denied
@@ -60,9 +60,9 @@ Rules:
 
 Operational meaning:
 
-- if the vault is `locked`, any runtime secret-resolution path should fail immediately
-- if the vault is `unlocked`, anything that can reach the API can read secrets
-- unlock state is intentionally coarse-grained right now; policy is mostly network reachability plus vault state
+- if Tijori is `locked`, any runtime secret-resolution path should fail immediately
+- if Tijori is `unlocked`, anything that can reach the API can read secrets
+- unlock state is intentionally coarse-grained right now; policy is mostly network reachability plus Tijori state
 
 ## Sentinel
 
@@ -99,30 +99,30 @@ Useful operational calls:
 
 - `GET /status`
   - returns whether the service is initialized
-  - returns whether the vault is locked
+  - returns whether Tijori is locked
   - returns the current unlock expiry
 - `GET /secrets`
   - returns fully resolved secret values
   - only works while unlocked
 
-## How You Should Run tijori
+## How You Should Run Tijori
 
-- run tijori in a container
+- run Tijori in a container
 - initialize it by attaching to that container and running the CLI inside the container
 - mount a persistent volume into `/var/lib/scryer-secrets`
-- keep tijori on an internal Docker network
-- do not expose the tijori API to anything outside that Docker network
-- anything that accesses tijori should be on the same Docker network as tijori itself
+- keep Tijori on an internal Docker network
+- do not expose the Tijori API to anything outside that Docker network
+- anything that accesses Tijori should be on the same Docker network as Tijori itself
 
 This point matters:
 
-- do not treat tijori as a public or host-exposed convenience API
+- do not treat Tijori as a public or host-exposed convenience API
 - network placement is currently a major part of the trust boundary
-- if something can reach tijori while it is unlocked, it can read secrets
+- if something can reach Tijori while it is unlocked, it can read secrets
 
 ## How To Use This System
 
-1. Start tijori in its container with persistent storage mounted.
+1. Start Tijori in its container with persistent storage mounted.
 2. Attach to the running container.
 3. Run the CLI inside the container to initialize the store.
 4. Unlock the store only for a bounded TTL.

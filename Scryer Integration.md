@@ -1,6 +1,6 @@
 # Scryer Integration
 
-This document captures the current Scryer-specific usage of tijori.
+This document captures the current Scryer-specific usage of Tijori.
 
 ## Secret Types In Use
 
@@ -26,10 +26,10 @@ Workflows do not define secrets themselves.
 
 The model is:
 
-1. identities and variables are defined centrally in tijori
+1. identities and variables are defined centrally in Tijori
 2. projects select which names are exposed to runtime
 3. orchestrator writes those selected names into `state.json`
-4. hook-side helper code resolves the selected names against tijori at runtime
+4. hook-side helper code resolves the selected names against Tijori at runtime
 
 Current runtime contract pieces:
 
@@ -47,4 +47,4 @@ Current helper behavior:
 ## Current Scryer-Specific Limitations
 
 - hooks currently resolve from `GET /secrets`, which is simple but broad; a narrower lookup path may be desirable later
-- project exposure filtering happens in Scryer, not inside tijori itself
+- project exposure filtering happens in Scryer, not inside Tijori itself
